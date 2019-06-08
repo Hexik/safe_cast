@@ -1,0 +1,8 @@
+*.log
+.build_cache
+**/build
+*.o
+*.elf
+*.map
+*.d
+*.bak

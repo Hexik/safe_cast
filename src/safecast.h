@@ -41,22 +41,26 @@ public:
     {
     }
 
+    SafeCastException( const SafeCastException& ) = default;
+
     /** Destructor.
      *  Virtual to allow for subclassing.
      */
-    virtual ~SafeCastException() throw() {}
+    virtual ~SafeCastException() noexcept {}
 
     /** Returns a pointer to the (constant) error description.
      *  @return A pointer to a const char*. The underlying memory
      *  is in possession of the SafeCastException object. Callers must
      *  not attempt to free the memory.
      */
-    virtual const char* what() const throw()
-    {
-        tmp = m_message + " " + std::to_string( m_number ) + " limit: " + std::to_string( m_limit );
-        return tmp.c_str();
-    }
+    virtual const char* what() const noexcept;
 };
+
+const char* SafeCastException::what() const noexcept
+{
+    tmp = m_message + " " + std::to_string( m_number ) + " limit: " + std::to_string( m_limit );
+    return tmp.c_str();
+}
 
 /*
  * define NO_SAFECAST if you want switch off the checking and logging from safe_cast
@@ -71,7 +75,7 @@ template <typename To, typename From> To safe_cast( From f ) { return static_cas
 
 /* full template with overflow checks and logs*/
 
-/** @cond C1 */
+/** C1 */
 /* usual arith. conversions for ints (pre-condition: A, B differ) */
 
 /* helper template to find an underlying type in case of enum */
@@ -132,7 +136,7 @@ template <typename To,
         std::numeric_limits<From>::digits + std::is_signed<From>::value )>
 struct do_conv;
 
-/** @cond C2 */
+/** C2 */
 /** these conversions never overflow, like int -> int, or  int -> long. */
 template <typename To, typename From, bool Sign> struct do_conv<To, From, Sign, Sign, true> {
     static To callAction( From f ) { return static_cast<To>( f ); }
@@ -143,7 +147,8 @@ template <typename To, typename From> struct do_conv<To, From, false, false, fal
     {
         using type = typename uac_type<To, From>::type;
         if( f > static_cast<type>( std::numeric_limits<To>::max() ) ) {
-            throw SafeCastException( "unsigned to unsigned", f, static_cast<type>( std::numeric_limits<To>::max() ) );
+            throw SafeCastException( "unsigned to unsigned", static_cast<long long int>( f ),
+                static_cast<type>( std::numeric_limits<To>::max() ) );
         }
         return static_cast<To>( f );
     }

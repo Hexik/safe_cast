@@ -6,11 +6,11 @@ target_include_directories(selfTest PRIVATE ${HEADER_DIR})
 
 # Add per compiler options
 if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU" )
-    target_compile_options( selfTest PRIVATE -Wall -Wextra -Wunreachable-code -Wpedantic -Wmissing-declarations -Werror )
+    target_compile_options( selfTest PRIVATE -Wall -Wextra -Wconversion -Wunreachable-code -Wpedantic -Wmissing-declarations -Werror )
 endif()
-# Clang specific options go here
+# Clang specific options go here, only for braves
 if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
-    target_compile_options( selfTest PRIVATE -Wweak-vtables -Wexit-time-destructors -Wmissing-noreturn )
+    target_compile_options( selfTest PRIVATE -Weverything -Wno-c++98-compat-pedantic )
 endif()
 
 # configure unit tests via CTest

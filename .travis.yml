@@ -48,7 +48,7 @@ matrix:
            name: "Hexik/safe_cast"
            description: "C++ safe integer conversion"
         notification_email: mira.fontan@gmail.com
-        build_command_prepend: "cmake -DCMAKE_CXX_COMPILER=g++-7 .."
+        build_command_prepend: "cov-configure --comptype gcc --compiler gcc-7 --template && cmake -DCMAKE_CXX_COMPILER=g++-7 .. "
         build_command: "make"
         branch_pattern: master
     script:

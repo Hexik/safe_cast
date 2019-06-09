@@ -1,6 +1,25 @@
 language: cpp
 compiler: gcc
 
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "hd52AFOmf48fZ0b/9R6JPS1RMWBwDrDfHDFxpKd2+uaFwGY2jXlr6GpFOntECpOIft+38DbO+vg2DhztR6BENoHH0AXq40KUCoWoowglCw4dZb8zqXIR+NbIxS1Kq0NtOHSGDJaewIFbtDSzgACv1H+LgbOwXJq/gXWH7EqfhB6vx0zFW/exzNiPoR/svOASLFRNDGHBQr/wCBIsKgfL7zTM5RP1302ocwUcYtpRh07lrQiGQBg56oYEOzq5/3hL66tM1I6JW3HJEbdizwMIwX90TLkp/t0AAw7a8/2JgXwWDGjhIxfCYRdc2AXwvr11zH5zfhLd6EYAv+Fpz3Dp5xebZ/5khs20zLfdQ+vREhFFbgTWQXcV0MJmvy1lpIDzJ/q29XijpttSdx2XuJTGZkrvr2Vfdc3xDAw31BCcbPOOVpKPG9HJXtAPLRkYZROd6H+wbrYvdq6uphv1LZtnsOKttOdLFTL7lT4CC+DDrYEfnX7GqJKVuMmLJhapg3nMkhCnE+lFcGJ6WuJoFJgFL9iw/rrGh6UOioKVLqbqxv/bV3X9LQykF9YXr3yp+DsuV1TGdlHW1hFON+/jHKq+h1gv1oj3FkhsvVtlsL84N4IJ9xc+OBIktpPpcruzYW8IZR8ArPrMSVdZmusDCHOPzRxoAJUA99I+2Uv2XPL1N4o="
+
+before_install:
+  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+
+addons:
+  coverity_scan:
+    project:
+      name: "Hexik/safe_cast"
+      description: "C++ safe integer conversion"
+    notification_email: mira.fontan@gmail.com
+    build_command_prepend: "mkdir build-cov && cd build-cov && cmake .."
+    build_command: "make"
+    branch_pattern: master
+
 os: linux
 addons:
   apt:

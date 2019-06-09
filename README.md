@@ -1,4 +1,8 @@
 [![Build Status](https://travis-ci.com/Hexik/safe_cast.svg?branch=master)](https://travis-ci.com/Hexik/safe_cast)
+<a href="https://scan.coverity.com/projects/hexik-safe_cast">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/18567/badge.svg"/>
+</a>
 
 # SafeCast
 

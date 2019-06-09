@@ -1,38 +1,111 @@
+#
+# Configuration
+#
 language: cpp
-compiler: gcc
 os: linux
 
+#
+# Tokens
+#
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
      - secure: "Wggjwary8WrXp6Wb0cDfKR53HbJwTvylxUk2KPzS5M8hrpy3FiMgsp1/wOHiOIcL+nOLgc0M/jsGXaM/UkkaIy1MiyBN2WCSevFuPJNXDwjLUrzT/pgJE9hzj1u/r5Z3k1j18BPuKMwhxnqKSdmwkzb/7VfjMHq16tFn8w6afbTtf89U+2gH6/WbYSJnCT0fMX3SM5dmVKPj90LeUtqc01+4Bl+q7hRg4aKPT1Vg4HIaBpWY2Aa9LchdRLnFkVzc/zuoN8cGkv78ltc7JOwaJRH9WE3uvsxfDlxyHkyPf3gqWqTmTpf+2Qw5mH2ok3YKLJTZsw1yLRipcEZPYKBSlUhiErH0ZI8QbIDmd09P2+68l10hrW7GzYTzOd77BvxpCRsHCfZfROELaczGbBCxP4IhqI7s/RYUiLtfu8kXRym5riH8WEYRWD4tQcSiq+ioOFgvJttRa7NgHORHyYI4snJJPhQJPRvA8BtX9woY2lqDypbGwSSDlp3ktnyczRKaHRFkiKZBFtyqWUi4DCSJkJKNYkn6uxz7l2/xJFpgVU/mkf6OfrtVnEnvXWnTf5oJ72p+v1WWEiKIHXVcmvy23Hzvg///VxYAXTwZ8xaxKnFp1oehBbA8AV4nrFvxzTaS521I1zsuDslOUMIo0JwVOM1OzsHmi0Wj01EiJN7lhD8="
 
-before_install:
-  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+#
+# Build Dependencies
+#
+before_script:
 
-addons:
-  coverity_scan:
-    project:
-      name: "Hexik/safe_cast"
-      description: "C++ safe integer conversion"
-    notification_email: mira.fontan@gmail.com
-    build_command_prepend: "mkdir build-cov && cd build-cov && cmake .."
-    build_command: "make"
-    branch_pattern: master
-
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-7
-
-script:
-  - export CC=gcc-7
-  - export CXX=g++-7
+  #
+  # Build Folder
+  #
   - mkdir build
   - cd build
-  - cmake ..
-  - cmake --build .
-  - ctest
-  
+
+#
+# Build Matrix
+#
+matrix:
+  include:
+
+  #
+  # Coverity Scan
+  #
+  - os: linux
+    env:
+      - TEST="Coverity Scan"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-7
+          - g++-7
+      coverity_scan:
+        project:
+           name: "Hexik/safe_cast"
+           description: "C++ safe integer conversion"
+        notification_email: mira.fontan@gmail.com
+        build_command_prepend: "cmake -DCMAKE_CXX_COMPILER=g++-7 .."
+        build_command: "make"
+        branch_pattern: master
+    script:
+        - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+
+  #
+  # G++ 6
+  #
+  - os: linux
+    env:
+      - TEST="G++ 6"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-6
+          - g++-6
+    script:
+      - cmake -DCMAKE_CXX_COMPILER="g++-6" ..
+      - cmake --build .
+      - ctest
+
+  #
+  # G++ 7
+  #
+  - os: linux
+    env:
+      - TEST="G++ 7"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-7
+          - g++-7
+    script:
+      - cmake -DCMAKE_CXX_COMPILER="g++-7" ..
+      - cmake --build .
+      - ctest
+
+  #
+  # Clang 5.0
+  #
+  - os: linux
+    env:
+      - TEST="Clang 5.0"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+          - llvm-toolchain-trusty-5.0
+        packages:
+          - clang-5.0
+          - gcc-7
+          - g++-7
+    script:
+      - cmake -DCMAKE_C_COMPILER=clang-5.0 -DCMAKE_CXX_COMPILER=clang++-5.0 ..
+      - cmake --build .
+      - ctest

@@ -106,6 +106,26 @@ matrix:
           - gcc-7
           - g++-7
     script:
-      - cmake -DCMAKE_C_COMPILER=clang-5.0 -DCMAKE_CXX_COMPILER=clang++-5.0 ..
+      - cmake -DCMAKE_CXX_COMPILER=clang++-5.0 ..
+      - cmake --build .
+      - ctest
+
+  #
+  # Clang 6.0
+  #
+  - os: linux
+    env:
+      - TEST="Clang 6.0"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+          - llvm-toolchain-trusty-6.0
+        packages:
+          - clang-6.0
+          - gcc-7
+          - g++-7
+    script:
+      - cmake -DCMAKE_CXX_COMPILER=clang++-6.0 ..
       - cmake --build .
       - ctest

@@ -1,6 +1,6 @@
 *.log
 .build_cache
-**/build
+**/build*
 *.o
 *.elf
 *.map

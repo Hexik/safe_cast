@@ -3,6 +3,7 @@
   <img alt="Coverity Scan Build Status"
        src="https://scan.coverity.com/projects/18567/badge.svg"/>
 </a>
+[![Build status](https://ci.appveyor.com/api/projects/status/a4wcf0sp8m86gh70?svg=true)](https://ci.appveyor.com/project/Hexik/safe-cast)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/48e1ea1b8d774084a41b045afd853047)](https://www.codacy.com/app/Hexik/safe_cast?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Hexik/safe_cast&amp;utm_campaign=Badge_Grade)
 
 # SafeCast

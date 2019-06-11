@@ -8,6 +8,11 @@
 #include "catch2/catch.hpp"
 #include "safecast.h"
 
+#if defined(_MSC_VER)
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 TEST_CASE( "unsigned -> signed", "[All]" )
 {
     /* unsigned -> signed, overflow */

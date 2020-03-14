@@ -55,20 +55,38 @@ matrix:
         - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 
   #
-  # G++ 6
+  # G++ 9
   #
   - os: linux
     env:
-      - TEST="G++ 6"
+      - TEST="G++ 9"
     addons:
       apt:
         sources:
           - ubuntu-toolchain-r-test
         packages:
-          - gcc-6
-          - g++-6
+          - gcc-9
+          - g++-9
     script:
-      - cmake -DCMAKE_CXX_COMPILER="g++-6" ..
+      - cmake -DCMAKE_CXX_COMPILER="g++-9" ..
+      - cmake --build .
+      - ctest
+
+  #
+  # G++ 8
+  #
+  - os: linux
+    env:
+      - TEST="G++ 8"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-8
+          - g++-8
+    script:
+      - cmake -DCMAKE_CXX_COMPILER="g++-8" ..
       - cmake --build .
       - ctest
 
@@ -91,41 +109,60 @@ matrix:
       - ctest
 
   #
-  # Clang 5.0
+  # G++ 6
   #
   - os: linux
     env:
-      - TEST="Clang 5.0"
+      - TEST="G++ 6"
     addons:
       apt:
         sources:
           - ubuntu-toolchain-r-test
-          - llvm-toolchain-trusty-5.0
         packages:
-          - clang-5.0
-          - gcc-7
-          - g++-7
+          - gcc-6
+          - g++-6
     script:
-      - cmake -DCMAKE_CXX_COMPILER=clang++-5.0 ..
+      - cmake -DCMAKE_CXX_COMPILER="g++-6" ..
       - cmake --build .
       - ctest
 
   #
-  # Clang 6.0
+  # Clang
   #
   - os: linux
     env:
-      - TEST="Clang 6.0"
+      - TEST="Clang"
     addons:
       apt:
         sources:
           - ubuntu-toolchain-r-test
-          - llvm-toolchain-trusty-6.0
+          - llvm-toolchain-trusty
         packages:
-          - clang-6.0
-          - gcc-7
-          - g++-7
+          - clang
+          - gcc
+          - g++
     script:
-      - cmake -DCMAKE_CXX_COMPILER=clang++-6.0 ..
+      - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
+      - cmake --build .
+      - ctest
+
+  #
+  # Clang 9.0
+  #
+  - os: linux
+    env:
+      - TEST="Clang 9.0"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+          - llvm-toolchain-bionic-9
+        packages:
+          - clang-9
+          - gcc-9
+          - g++-9
+
+    script:
+      - cmake -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_C_COMPILER=clang-9 ..
       - cmake --build .
       - ctest

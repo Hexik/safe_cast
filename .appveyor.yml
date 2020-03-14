@@ -1,17 +1,33 @@
-os: Visual Studio 2017
-platform: x64
-
 #
+os:
+  - Visual Studio 2019
+  - Visual Studio 2017
+  - Visual Studio 2015
+  
+# Win32 and x64 are CMake-compatible solution platform names.
+# This allows us to pass %PLATFORM% to CMake -A.
+#
+platform:
+  - Win32
+  - x64
+
+# build Configurations, i.e. Debug, Release, etc.
+#
+configuration:
+  - Debug
+  - Release
+
+#Cmake will autodetect the compiler, but we set the arch
+#
+before_build:
+  - cmake -BBuild -A%PLATFORM%
+
 # Build
 #
 build_script:
+  - cmake --build Build --config %CONFIGURATION%
 
-  #
-  # Visual Studio
-  #
-  - mkdir build_msvc
-  - cd build_msvc
-  - cmake -G "Visual Studio 15 2017 Win64" ..
-  - cmake --build . --config Debug
-  - ctest -C Debug
-  - cd ..                                                        
+test_script:
+  - cd Build
+  - ctest -V -j 2 -C %CONFIGURATION%
+                                                        

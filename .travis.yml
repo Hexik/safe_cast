@@ -3,6 +3,7 @@
 #
 language: cpp
 os: linux
+dist: bionic
 
 #
 # Tokens
@@ -136,7 +137,7 @@ matrix:
       apt:
         sources:
           - ubuntu-toolchain-r-test
-          - llvm-toolchain-trusty
+          - llvm-toolchain-bionic
         packages:
           - clang
           - gcc

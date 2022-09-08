@@ -14,6 +14,7 @@
 #ifndef SAFECAST_H
 #define SAFECAST_H
 
+#include <string>
 #include <cstdint>
 #include <exception>
 #include <limits>

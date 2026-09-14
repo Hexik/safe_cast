@@ -12,11 +12,21 @@ if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU" )
     target_compile_options( selfTest PRIVATE -Wall -Wextra -Wconversion -Wunreachable-code -Wpedantic -Wmissing-declarations -Werror )
 endif()
 # Clang specific options go here, only for braves
-# -Wpadded only reports struct alignment, it is noise for a header only cast library
-# -Wweak-vtables is inherent to a header only library, SafeCastException cannot have
-# an out-of-line virtual method to anchor its vtable
+# -Weverything is not meant for production use, every new Clang release adds new
+# warnings, so the noisy ones which say nothing about our code are disabled:
+#   -Wpadded        only reports struct alignment
+#   -Wweak-vtables  inherent to a header only library, SafeCastException cannot have
+#                   an out-of-line virtual method to anchor its vtable
 if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
-    target_compile_options( selfTest PRIVATE -Weverything -Wno-c++98-compat-pedantic -Wno-padded -Wno-weak-vtables )
+    target_compile_options( selfTest PRIVATE
+        -Weverything
+        -Wno-c++98-compat-pedantic
+        -Wno-padded
+        -Wno-weak-vtables )
+endif()
+# AppleClang complains about /usr/local/include coming from the build environment
+if ( CMAKE_CXX_COMPILER_ID MATCHES "AppleClang" )
+    target_compile_options( selfTest PRIVATE -Wno-poison-system-directories )
 endif()
 
 # configure unit tests via CTest

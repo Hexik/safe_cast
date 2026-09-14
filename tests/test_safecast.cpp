@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2014-2019 Miroslav Fontan
+ * Copyright (C) 2014-2026 Miroslav Fontan
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#include "catch2/catch_amalgamated.hpp"
+#include <catch2/catch_amalgamated.hpp>
 #include "safecast.h"
 
 #if defined(_MSC_VER)
@@ -94,6 +94,43 @@ TEST_CASE( "enum default", "[All]" )
     CHECK_THROWS( safe_cast<int16_t>( eDefault::OK ) );
     CHECK_NOTHROW( safe_cast<int32_t>( eDefault::OK ) );
     CHECK_NOTHROW( safe_cast<int64_t>( eDefault::OK ) );
+}
+
+TEST_CASE( "negative enum", "[All]" )
+{
+    enum eNegative { TOO_LOW = -300, FITS = -42 };
+    /* signed underlying type has to be respected, no silent truncation */
+    CHECK_THROWS( safe_cast<int8_t>( eNegative::TOO_LOW ) );
+    CHECK_THROWS( safe_cast<uint8_t>( eNegative::TOO_LOW ) );
+    CHECK_THROWS( safe_cast<uint32_t>( eNegative::FITS ) );
+    CHECK( safe_cast<int8_t>( eNegative::FITS ) == -42 );
+    CHECK( safe_cast<int32_t>( eNegative::TOO_LOW ) == -300 );
+}
+
+TEST_CASE( "enum class", "[All]" )
+{
+    enum class eScoped : uint16_t { BIG = 1000 };
+    CHECK_THROWS( safe_cast<uint8_t>( eScoped::BIG ) );
+    CHECK( safe_cast<uint16_t>( eScoped::BIG ) == 1000 );
+    CHECK( safe_cast<eScoped>( 1000 ) == eScoped::BIG );
+    CHECK_THROWS( safe_cast<eScoped>( -1 ) );
+}
+
+TEST_CASE( "converted values", "[All]" )
+{
+    CHECK( safe_cast<int8_t>( 127 ) == 127 );
+    CHECK( safe_cast<int8_t>( -128 ) == -128 );
+    CHECK( safe_cast<uint64_t>( std::numeric_limits<uint32_t>::max() ) == 4294967295ULL );
+    CHECK( safe_cast<int64_t>( std::numeric_limits<int32_t>::min() ) == -2147483648LL );
+}
+
+TEST_CASE( "exception message", "[All]" )
+{
+    /* the whole range of uint64_t has to be reported, no wrap around */
+    CHECK_THROWS_WITH( safe_cast<uint32_t>( std::numeric_limits<uint64_t>::max() ),
+        "unsigned to unsigned 18446744073709551615 limit: 4294967295" );
+    CHECK_THROWS_WITH( safe_cast<int8_t>( -300 ), "signed to signed -300 limit: -128" );
+    CHECK_THROWS_WITH( safe_cast<uint8_t>( -1 ), "signed to unsigned -1 limit: 0" );
 }
 
 TEST_CASE( "info loss", "[All]" )

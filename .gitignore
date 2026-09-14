@@ -1,6 +1,11 @@
 *.log
 .build_cache
 **/build*
+cmake-build-*/
+compile_commands.json
+.idea/
+.vs/
+.vscode/
 *.o
 *.elf
 *.map

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Miroslav Fontan
+ * Copyright (C) 2014-2026 Miroslav Fontan
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
@@ -14,53 +14,31 @@
 #ifndef SAFECAST_H
 #define SAFECAST_H
 
-#include <cstdint>
-#include <exception>
 #include <limits>
+#include <stdexcept>
+#include <string>
 #include <type_traits>
 
-class SafeCastException : virtual public std::exception
+/**
+ * @class SafeCastException
+ * @brief thrown when a value does not fit into the destination type
+ *
+ * The message is composed in the constructor, so what() neither allocates
+ * nor throws.
+ */
+class SafeCastException : public std::runtime_error
 {
-
-private:
-    std::string m_message;   ///< Conversion type
-    long long int m_number;  ///< Checked number
-    long long int m_limit;   ///< Limit value
-    mutable std::string tmp; ///< internal storage
-
 public:
-    /** Constructor (C++ STL string, int, int).
-     *  @param msg Conversion decription
-     *  @param num origial value
-     *  @param limit limit value
+    /** Constructor.
+     *  @param msg conversion description
+     *  @param num original value, already converted to text
+     *  @param limit violated limit value, already converted to text
      */
-    explicit SafeCastException( const std::string& msg, long long int num, long long int limit )
-        : m_message( msg )
-        , m_number( num )
-        , m_limit( limit )
+    SafeCastException( const char* msg, const std::string& num, const std::string& limit )
+        : std::runtime_error( std::string( msg ) + " " + num + " limit: " + limit )
     {
     }
-
-    SafeCastException( const SafeCastException& ) = default;
-
-    /** Destructor.
-     *  Virtual to allow for subclassing.
-     */
-    virtual ~SafeCastException() noexcept {}
-
-    /** Returns a pointer to the (constant) error description.
-     *  @return A pointer to a const char*. The underlying memory
-     *  is in possession of the SafeCastException object. Callers must
-     *  not attempt to free the memory.
-     */
-    virtual const char* what() const noexcept;
 };
-
-const char* SafeCastException::what() const noexcept
-{
-    tmp = m_message + " " + std::to_string( m_number ) + " limit: " + std::to_string( m_limit );
-    return tmp.c_str();
-}
 
 /*
  * define NO_SAFECAST if you want switch off the checking and logging from safe_cast
@@ -69,14 +47,14 @@ const char* SafeCastException::what() const noexcept
 #ifdef NO_SAFECAST
 
 /** dummy template without overflow checks, static_cast only */
-template <typename To, typename From> To safe_cast( From f ) { return static_cast<To>( f ); }
+template <typename To, typename From> To safe_cast( From f ) noexcept { return static_cast<To>( f ); }
 
 #else /*  NO_SAFECAST */
 
 /* full template with overflow checks and logs*/
 
 /** C1 */
-/* usual arith. conversions for ints (pre-condition: A, B differ) */
+namespace safecast_detail {
 
 /* helper template to find an underlying type in case of enum */
 template <typename T, typename = typename std::is_enum<T>::type> struct safe_underlying_type {
@@ -87,36 +65,11 @@ template <typename T> struct safe_underlying_type<T, std::true_type> {
     using type = std::underlying_type_t<T>;
 };
 
-template <int> struct uac_at;
-template <> struct uac_at<1> {
-    using type = int;
-};
-template <> struct uac_at<2> {
-    using type = unsigned int;
-};
-template <> struct uac_at<3> {
-    using type = long;
-};
-template <> struct uac_at<4> {
-    using type = unsigned long;
-};
-template <> struct uac_at<5> {
-    using type = long long;
-};
-template <> struct uac_at<6> {
-    using type = unsigned long long;
-};
+template <typename T> using safe_underlying_type_t = typename safe_underlying_type<T>::type;
 
-template <typename A, typename B> struct uac_type {
-    static char ( &f( int ) )[1];
-    static char ( &f( unsigned int ) )[2];
-    static char ( &f( long ) )[3];
-    static char ( &f( unsigned long ) )[4];
-    static char ( &f( long long ) )[5];
-    static char ( &f( unsigned long long ) )[6];
-    using type = typename uac_at<static_cast<int>( sizeof f(
-        false ? typename safe_underlying_type<A>::type() : typename safe_underlying_type<B>::type() ) )>::type;
-};
+/* usual arithmetic conversions for ints, std::common_type_t models the ternary operator */
+template <typename A, typename B> using uac_type_t = std::common_type_t<A, B>;
+
 /** @endcond C1 */
 
 /**
@@ -139,16 +92,16 @@ struct do_conv;
 /** C2 */
 /** these conversions never overflow, like int -> int, or  int -> long. */
 template <typename To, typename From, bool Sign> struct do_conv<To, From, Sign, Sign, true> {
-    static To callAction( From f ) { return static_cast<To>( f ); }
+    static To callAction( From f ) noexcept { return static_cast<To>( f ); }
 };
 
 template <typename To, typename From> struct do_conv<To, From, false, false, false> {
     static To callAction( From f )
     {
-        using type = typename uac_type<To, From>::type;
-        if( f > static_cast<type>( std::numeric_limits<To>::max() ) ) {
-            throw SafeCastException( "unsigned to unsigned", static_cast<long long int>( f ),
-                static_cast<type>( std::numeric_limits<To>::max() ) );
+        using type = uac_type_t<To, From>;
+        const type limit = static_cast<type>( std::numeric_limits<To>::max() );
+        if( static_cast<type>( f ) > limit ) {
+            throw SafeCastException( "unsigned to unsigned", std::to_string( f ), std::to_string( limit ) );
         }
         return static_cast<To>( f );
     }
@@ -157,8 +110,8 @@ template <typename To, typename From> struct do_conv<To, From, false, false, fal
 template <typename To, typename From> struct do_conv<To, From, false, true, true> {
     static To callAction( From f )
     {
-        if( 0 > f ) {
-            throw SafeCastException( "signed to unsigned", f, 0 );
+        if( f < 0 ) {
+            throw SafeCastException( "signed to unsigned", std::to_string( f ), "0" );
         }
         return static_cast<To>( f );
     }
@@ -167,34 +120,25 @@ template <typename To, typename From> struct do_conv<To, From, false, true, true
 template <typename To, typename From> struct do_conv<To, From, false, true, false> {
     static To callAction( From f )
     {
-        using type = typename uac_type<To, From>::type;
-        if( 0 > f ) {
-            throw SafeCastException( "signed to unsigned", f, 0 );
+        using type = uac_type_t<To, From>;
+        if( f < 0 ) {
+            throw SafeCastException( "signed to unsigned", std::to_string( f ), "0" );
         }
-        if( static_cast<type>( f ) > static_cast<type>( std::numeric_limits<To>::max() ) ) {
-            throw SafeCastException( "signed to unsigned", f, static_cast<type>( std::numeric_limits<To>::max() ) );
-        }
-        return static_cast<To>( f );
-    }
-};
-
-template <typename To, typename From> struct do_conv<To, From, true, false, false> {
-    static To callAction( From f )
-    {
-        using type = typename uac_type<To, From>::type;
-        if( f > static_cast<type>( std::numeric_limits<To>::max() ) ) {
-            throw SafeCastException( "unsigned to signed", f, static_cast<type>( std::numeric_limits<To>::max() ) );
+        const type limit = static_cast<type>( std::numeric_limits<To>::max() );
+        if( static_cast<type>( f ) > limit ) {
+            throw SafeCastException( "signed to unsigned", std::to_string( f ), std::to_string( limit ) );
         }
         return static_cast<To>( f );
     }
 };
 
-template <typename To, typename From> struct do_conv<To, From, true, false, true> {
+template <typename To, typename From, bool Rank> struct do_conv<To, From, true, false, Rank> {
     static To callAction( From f )
     {
-        using type = typename uac_type<To, From>::type;
-        if( static_cast<type>( f ) > static_cast<type>( std::numeric_limits<To>::max() ) ) {
-            throw SafeCastException( "unsigned to signed", f, static_cast<type>( std::numeric_limits<To>::max() ) );
+        using type = uac_type_t<To, From>;
+        const type limit = static_cast<type>( std::numeric_limits<To>::max() );
+        if( static_cast<type>( f ) > limit ) {
+            throw SafeCastException( "unsigned to signed", std::to_string( f ), std::to_string( limit ) );
         }
         return static_cast<To>( f );
     }
@@ -203,16 +147,20 @@ template <typename To, typename From> struct do_conv<To, From, true, false, true
 template <typename To, typename From> struct do_conv<To, From, true, true, false> {
     static To callAction( From f )
     {
-        if( std::numeric_limits<To>::min() > f ) {
-            throw SafeCastException( "signed to signed", f, std::numeric_limits<To>::min() );
+        if( f < std::numeric_limits<To>::min() ) {
+            throw SafeCastException( "signed to signed", std::to_string( f ),
+                std::to_string( std::numeric_limits<To>::min() ) );
         }
         if( f > std::numeric_limits<To>::max() ) {
-            throw SafeCastException( "signed to signed", f, std::numeric_limits<To>::max() );
+            throw SafeCastException( "signed to signed", std::to_string( f ),
+                std::to_string( std::numeric_limits<To>::max() ) );
         }
         return static_cast<To>( f );
     }
 };
 /** @endcond C2 */
+
+} // namespace safecast_detail
 
 /**
  * @brief safe conversion between integers
@@ -220,8 +168,22 @@ template <typename To, typename From> struct do_conv<To, From, true, true, false
  * @tparam From original type in conversion
  * @param f value to convert
  * @return converted vaule
+ * @throws SafeCastException when the value does not fit into To
+ *
+ * Enums are resolved to their underlying type on both sides, so the signedness
+ * and the range of the real representation are taken into account.
  */
-template <typename To, typename From> To safe_cast( From f ) { return do_conv<To, From>::callAction( f ); }
+template <typename To, typename From> To safe_cast( From f )
+{
+    using to_type = safecast_detail::safe_underlying_type_t<To>;
+    using from_type = safecast_detail::safe_underlying_type_t<From>;
+
+    static_assert( std::is_integral<to_type>::value, "safe_cast: To must be an integral or enum type" );
+    static_assert( std::is_integral<from_type>::value, "safe_cast: From must be an integral or enum type" );
+
+    return static_cast<To>(
+        safecast_detail::do_conv<to_type, from_type>::callAction( static_cast<from_type>( f ) ) );
+}
 
 #endif /*  NO_SAFECAST */
 #endif /* SAFECAST_H */

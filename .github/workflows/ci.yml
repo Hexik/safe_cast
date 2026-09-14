@@ -88,3 +88,22 @@ jobs:
           cmake -S consumer -B consumer/build -DCMAKE_PREFIX_PATH="${PWD}/prefix"
           cmake --build consumer/build
           ./consumer/build/consumer
+
+  # Single aggregated gate, so branch protection does not need to list every job
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [ build, sanitizers, no-safecast, install ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::a required job did not succeed"
+              exit 1
+            fi
+          done

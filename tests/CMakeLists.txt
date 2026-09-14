@@ -1,8 +1,10 @@
 
 add_library(test_main OBJECT test_main.cpp)
 
-add_executable(selfTest test_safecast.cpp $<TARGET_OBJECTS:test_main>)
-target_include_directories(selfTest PRIVATE ${HEADER_DIR})
+# test_odr.cpp is a second translation unit, it catches ODR violations in safecast.h
+add_executable(selfTest test_safecast.cpp test_odr.cpp $<TARGET_OBJECTS:test_main>)
+target_link_libraries(selfTest PRIVATE SafeCast::SafeCast)
+target_include_directories(selfTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Add per compiler options
 if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU" )

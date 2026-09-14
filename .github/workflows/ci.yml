@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.platform.name }} ${{ matrix.build_type }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [ Debug, Release ]
+        platform:
+          - { name: Linux GCC,     os: ubuntu-latest,  args: -DCMAKE_CXX_COMPILER=g++ }
+          - { name: Linux Clang,   os: ubuntu-latest,  args: -DCMAKE_CXX_COMPILER=clang++ }
+          - { name: macOS Clang,   os: macos-latest,   args: -DCMAKE_CXX_COMPILER=clang++ }
+          - { name: Windows MSVC,  os: windows-latest, args: -A x64 }
+          - { name: Windows MSVC32, os: windows-latest, args: -A Win32 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.platform.args }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Test
+        run: ctest --test-dir build --build-config ${{ matrix.build_type }} --output-on-failure
+
+  sanitizers:
+    name: Sanitizers (ASan + UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  no-safecast:
+    name: NO_SAFECAST build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile the switched off variant
+        run: |
+          printf '#include "safecast.h"\nint main() { return safe_cast<int>( 42 ) == 42 ? 0 : 1; }\n' > nsc.cpp
+          g++ -std=c++14 -Wall -Wextra -Wconversion -Wpedantic -Werror -DNO_SAFECAST -Isrc nsc.cpp -o nsc
+          ./nsc
+
+  install:
+    name: Install and consume via find_package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+          cmake --install build --prefix "${PWD}/prefix"
+
+      - name: Consume
+        run: |
+          mkdir -p consumer
+          printf 'cmake_minimum_required(VERSION 3.16)\nproject(consumer LANGUAGES CXX)\nfind_package(SafeCast REQUIRED)\nadd_executable(consumer main.cpp)\ntarget_link_libraries(consumer PRIVATE SafeCast::SafeCast)\n' > consumer/CMakeLists.txt
+          printf '#include "safecast.h"\nint main() { return safe_cast<int>( 42 ) == 42 ? 0 : 1; }\n' > consumer/main.cpp
+          cmake -S consumer -B consumer/build -DCMAKE_PREFIX_PATH="${PWD}/prefix"
+          cmake --build consumer/build
+          ./consumer/build/consumer

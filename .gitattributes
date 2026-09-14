@@ -1,0 +1,20 @@
+# Aktivuje automatickou detekci textových souborů a normalizaci na LF v repozitáři
+* text=auto
+
+# Explicitně určení textových souborů, které mají mít vždy LF (Unix) při checkoutu
+*.js text eol=lf
+*.ts text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.cmake text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+
+# Explicitní určení souborů, které vyžadují CRLF (Windows) – např. dávkové soubory
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Označení binárních souborů, aby se jich Git nedotýkal
+*.png binary
+*.jpg binary
+*.gif binary

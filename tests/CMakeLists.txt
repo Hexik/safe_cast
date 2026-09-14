@@ -13,8 +13,10 @@ if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU" )
 endif()
 # Clang specific options go here, only for braves
 # -Wpadded only reports struct alignment, it is noise for a header only cast library
+# -Wweak-vtables is inherent to a header only library, SafeCastException cannot have
+# an out-of-line virtual method to anchor its vtable
 if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
-    target_compile_options( selfTest PRIVATE -Weverything -Wno-c++98-compat-pedantic -Wno-padded )
+    target_compile_options( selfTest PRIVATE -Weverything -Wno-c++98-compat-pedantic -Wno-padded -Wno-weak-vtables )
 endif()
 
 # configure unit tests via CTest

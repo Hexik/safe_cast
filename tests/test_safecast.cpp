@@ -5,7 +5,7 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_amalgamated.hpp"
 #include "safecast.h"
 
 #if defined(_MSC_VER)

@@ -10,7 +10,7 @@
  * violations (non-inline definitions in the header).
  */
 
-#include "catch2/catch_amalgamated.hpp"
+#include <catch2/catch_amalgamated.hpp>
 #include "safecast.h"
 
 TEST_CASE( "second translation unit", "[All]" )

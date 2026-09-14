@@ -26,7 +26,7 @@ jobs:
           - { name: Windows MSVC32, os: windows-latest, args: -A Win32 }
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.platform.args }}
@@ -41,7 +41,7 @@ jobs:
     name: Sanitizers (ASan + UBSan)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure
         run: >
@@ -61,7 +61,7 @@ jobs:
     name: NO_SAFECAST build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Compile the switched off variant
         run: |
@@ -73,7 +73,7 @@ jobs:
     name: Install and consume via find_package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install
         run: |

@@ -54,4 +54,4 @@ Please make sure to update tests as appropriate.
 [![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
 
 -   **[MIT license](http://opensource.org/licenses/mit-license.php)**
--   Copyright 2014-2019 (c) Miroslav Fontan
+-   Copyright 2014-2026 (c) Miroslav Fontan
